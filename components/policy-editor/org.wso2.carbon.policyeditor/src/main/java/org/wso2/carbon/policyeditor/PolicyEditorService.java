@@ -175,8 +175,8 @@ public class PolicyEditorService {
             docFactory.setAttribute(SECURITY_MANAGER_PROPERTY, securityManager);
             DocumentBuilder docBuilder;
             Document xmlDoc;
-            // now use the factory to create the document builder
 
+            // now use the factory to create the document builder
             docFactory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
             docBuilder = docFactory.newDocumentBuilder();
             docBuilder.setEntityResolver(new CarbonEntityResolver());
