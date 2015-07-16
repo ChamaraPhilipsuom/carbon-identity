@@ -163,6 +163,26 @@ public class PolicyEditorService {
             DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
             Document xmlDoc = docBuilder.parse(new ByteArrayInputStream(xml.getBytes(Charsets.UTF_8)));
 
+            // create the factory
+            DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
+            documentBuilderFactory.setIgnoringComments(true);
+            documentBuilderFactory.setNamespaceAware(true);
+            documentBuilderFactory.setExpandEntityReferences(false);
+            SecurityManager securityManager = new SecurityManager();
+            securityManager.setEntityExpansionLimit(ENTITY_EXPANSION_LIMIT);
+            documentBuilderFactory.setAttribute(SECURITY_MANAGER_PROPERTY, securityManager);
+            DocumentBuilder documentBuilder;
+
+            // now use the factory to create the document builder
+            try {
+                documentBuilderFactory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+                documentBuilder = documentBuilderFactory.newDocumentBuilder();
+                documentBuilder.setEntityResolver(new CarbonEntityResolver());
+                documentBuilder.setErrorHandler(this);
+            } catch (ParserConfigurationException pce) {
+                throw new IllegalArgumentException("Failed to setup repository: ");
+            }
+
             OutputFormat format = new OutputFormat(xmlDoc);
             format.setLineWidth(0);
             format.setIndenting(true);
