@@ -19,16 +19,20 @@
 
 package org.wso2.carbon.policyeditor;
 
+import org.wso2.carbon.policyeditor.util.CarbonEntityResolver;
 import org.apache.axis2.AxisFault;
 import org.apache.commons.io.Charsets;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.xml.serialize.OutputFormat;
 import org.apache.xml.serialize.XMLSerializer;
+import org.apache.xerces.impl.Constants;
+import org.apache.xerces.util.SecurityManager;
 import org.w3c.dom.Document;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.XMLConstants;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -36,12 +40,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
+import javax.xml.parsers.ParserConfigurationException;
 
 
 public class PolicyEditorService {
 
     private static final Log log = LogFactory.getLog(PolicyEditorService.class);
-
+    private static final String SECURITY_MANAGER_PROPERTY = Constants.XERCES_PROPERTY_PREFIX + Constants.SECURITY_MANAGER_PROPERTY;
+    private static final int ENTITY_EXPANSION_LIMIT = 0;
     // The location of the XSD file resources
     private static final String ORG_WSO2_CARBON_POLICYEDITOR_XSD =
             "/org/wso2/carbon/policyeditor/xsd/";
@@ -75,7 +81,7 @@ public class PolicyEditorService {
             policy = fBuf.toString();
             dis.close();
         } catch (IOException e) {
-            throw new AxisFault("Axis Error while getting policy docs." ,e);
+            throw new AxisFault("Axis Error while getting policy docs.", e);
         }
 
         return "<![CDATA[" + policy + "]]>";
@@ -159,29 +165,23 @@ public class PolicyEditorService {
     public String formatXML(String xml) {
 
         try {
-            DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
-            Document xmlDoc = docBuilder.parse(new ByteArrayInputStream(xml.getBytes(Charsets.UTF_8)));
-
             // create the factory
-            DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
-            documentBuilderFactory.setIgnoringComments(true);
-            documentBuilderFactory.setNamespaceAware(true);
-            documentBuilderFactory.setExpandEntityReferences(false);
+            DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
+            docFactory.setIgnoringComments(true);
+            docFactory.setNamespaceAware(true);
+            docFactory.setExpandEntityReferences(false);
             SecurityManager securityManager = new SecurityManager();
             securityManager.setEntityExpansionLimit(ENTITY_EXPANSION_LIMIT);
-            documentBuilderFactory.setAttribute(SECURITY_MANAGER_PROPERTY, securityManager);
-            DocumentBuilder documentBuilder;
-
+            docFactory.setAttribute(SECURITY_MANAGER_PROPERTY, securityManager);
+            DocumentBuilder docBuilder;
+            Document xmlDoc;
             // now use the factory to create the document builder
-            try {
-                documentBuilderFactory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
-                documentBuilder = documentBuilderFactory.newDocumentBuilder();
-                documentBuilder.setEntityResolver(new CarbonEntityResolver());
-                documentBuilder.setErrorHandler(this);
-            } catch (ParserConfigurationException pce) {
-                throw new IllegalArgumentException("Failed to setup repository: ");
-            }
+
+            docFactory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+            docBuilder = docFactory.newDocumentBuilder();
+            docBuilder.setEntityResolver(new CarbonEntityResolver());
+            xmlDoc = docBuilder.parse(new ByteArrayInputStream(xml.getBytes(Charsets.UTF_8)));
+
 
             OutputFormat format = new OutputFormat(xmlDoc);
             format.setLineWidth(0);
@@ -193,6 +193,8 @@ public class PolicyEditorService {
 
             xml = baos.toString("UTF-8");
 
+        } catch (ParserConfigurationException pce) {
+            throw new IllegalArgumentException("Failed to setup repository: ");
         } catch (Exception e) {
             log.error(e);
         }
