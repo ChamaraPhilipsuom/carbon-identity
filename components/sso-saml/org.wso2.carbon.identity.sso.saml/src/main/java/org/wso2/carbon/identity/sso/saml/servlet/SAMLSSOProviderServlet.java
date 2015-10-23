@@ -139,6 +139,7 @@ public class SAMLSSOProviderServlet extends HttpServlet {
             authMode = SAMLSSOConstants.AuthnModes.USERNAME_PASSWORD;
         }
         String relayState = req.getParameter(SAMLSSOConstants.RELAY_STATE);
+        log.info("realy state in handle request ******************="+relayState);
         String spEntityID = req.getParameter(SAMLSSOConstants.QueryParameter
                 .SP_ENTITY_ID.toString());
         String samlRequest = req.getParameter("SAMLRequest");
@@ -550,6 +551,7 @@ public class SAMLSSOProviderServlet extends HttpServlet {
             String pageWithAcsResponseRelay = pageWithAcsResponse;
 
             if(relayState != null) {
+                log.info("relay state in sendResponse = "+relayState);
                 pageWithAcsResponseRelay = pageWithAcsResponse.replace("<!--$params-->", "<!--$params-->\n" + "<input type='hidden' name='RelayState' value='" + Encode.forHtmlAttribute(relayState)+ "'>");
             }
 
